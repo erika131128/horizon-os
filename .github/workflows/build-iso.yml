@@ -1,1 +1,24 @@
-
+name: Gerar ISO do Horizon OS
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Liberar espaço em disco
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          df -h /
+      - name: Construir a ISO
+        run: |
+          chmod +x build.sh auto/* config/hooks/live/* config/includes.chroot/usr/local/bin/*
+          docker run --rm --privileged -v "$PWD":/work -w /work debian:trixie \
+            bash -c "apt-get update && apt-get install -y live-build && ./build.sh"
+      - name: Enviar a ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: horizon-os-iso
+          path: "*.iso"
+          if-no-files-found: error
